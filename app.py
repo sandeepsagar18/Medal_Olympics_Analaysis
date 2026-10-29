@@ -48,7 +48,7 @@ st.sidebar.image('https://e7.pngegg.com/pngimages/1020/402/png-clipart-2024-summ
 
 user_menu = st.sidebar.radio(
     'Explore Insights',
-    ('Medal Tally', 'Overall Analysis', 'Country-wise Analysis', 'Country Comparison', 'Athlete wise Analysis')
+    ('Medal Tally', 'Overall Analysis', 'Country-wise Analysis', 'Country Comparison', 'Athlete wise Analysis', 'LA 2028 Predictor')
 )
 
 # ==========================================
@@ -316,3 +316,76 @@ elif user_menu == 'Athlete wise Analysis':
                              color_discrete_sequence=['#1E88E5', '#E91E63'])
         fig_gender.update_layout(xaxis_title="Year", yaxis_title="Participant Count", legend_title="Gender")
         st.plotly_chart(fig_gender, use_container_width=True)
+
+# ==========================================
+# 6. LA 2028 OLYMPIC MEDAL PREDICTOR
+# ==========================================
+elif user_menu == 'LA 2028 Predictor':
+    st.title("🔮 Los Angeles 2028 Olympic Medal Predictor")
+    st.caption("Machine Learning (Ridge Time-Series Regression) forecast incorporating recent momentum and historical trajectories (1984 - 2024).")
+
+    country_list = df['region'].dropna().unique().tolist()
+    country_list.sort()
+
+    default_idx = country_list.index("USA") if "USA" in country_list else 0
+    selected_country = st.selectbox("Select Country to Predict for LA 2028", country_list, index=default_idx)
+
+    pred, hist = helper.predict_la_2028(df, selected_country)
+
+    if pred is None:
+        st.warning(f"Insufficient modern Olympic medal data to build a reliable projection for {selected_country}.")
+    else:
+        st.subheader(f"🎯 Projected Medal Haul for {selected_country} in LA 2028")
+
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.metric("🥇 Projected Gold", pred['Predicted_Gold'])
+        with c2:
+            st.metric("🥈 Projected Silver", pred['Predicted_Silver'])
+        with c3:
+            st.metric("🥉 Projected Bronze", pred['Predicted_Bronze'])
+        with c4:
+            st.metric("🏆 Total Projected Medals", pred['Predicted_Total'],
+                      delta=f"{pred['Predicted_Total'] - pred['Last_Edition_Total']:+} vs Paris 2024")
+
+        if selected_country == 'USA':
+            st.info("🇺🇸 **Host Nation Factor Active**: Model includes historic host country boost for USA hosting in Los Angeles 2028.")
+
+        # Visualizing the projection curve
+        hist_modern = hist[hist['Year'] >= 1984].copy()
+        
+        pred_row = pd.DataFrame([{
+            'Year': 2028,
+            'Gold': pred['Predicted_Gold'],
+            'Silver': pred['Predicted_Silver'],
+            'Bronze': pred['Predicted_Bronze'],
+            'Total': pred['Predicted_Total']
+        }])
+        
+        hist_modern['Type'] = 'Actual'
+        pred_row['Type'] = 'Predicted (2028)'
+        chart_data = pd.concat([hist_modern, pred_row], ignore_index=True)
+
+        fig_pred = px.line(
+            chart_data,
+            x="Year",
+            y="Total",
+            markers=True,
+            title=f"{selected_country} Historical Medals and 2028 Forecast",
+            color_discrete_sequence=['#1E88E5']
+        )
+        # Highlight the 2028 point
+        fig_pred.add_scatter(
+            x=[2028],
+            y=[pred['Predicted_Total']],
+            mode='markers+text',
+            marker=dict(size=14, color='#E53935', symbol='star'),
+            text=[f"2028 Forecast: {pred['Predicted_Total']} Medals"],
+            textposition="top center",
+            name="2028 Forecast"
+        )
+        fig_pred.update_layout(xaxis_title="Olympic Year", yaxis_title="Total Medals", height=500)
+        st.plotly_chart(fig_pred, use_container_width=True)
+
+        st.subheader("📊 Historical Trajectory Data (1984 - 2028 Projected)")
+        st.dataframe(chart_data[['Year', 'Gold', 'Silver', 'Bronze', 'Total', 'Type']], use_container_width=True, hide_index=True)

@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 
 
@@ -133,3 +134,76 @@ def compare_countries(df, country1, country2):
     merged[f'Medal_{country1}'] = merged[f'Medal_{country1}'].astype(int)
     merged[f'Medal_{country2}'] = merged[f'Medal_{country2}'].astype(int)
     return merged
+
+
+def predict_la_2028(df, country):
+    import numpy as np
+    from sklearn.linear_model import Ridge
+
+    medal_df = df.drop_duplicates(subset=['Team', 'NOC', 'Games', 'Year', 'City', 'Sport', 'Event', 'Medal'])
+    country_medals = medal_df[medal_df['region'] == country]
+
+    summer_years = sorted(df['Year'].unique())
+    all_rows = []
+    for y in summer_years:
+        sub = country_medals[country_medals['Year'] == y]
+        g = int(sub['Gold'].sum())
+        s = int(sub['Silver'].sum())
+        b = int(sub['Bronze'].sum())
+        tot = g + s + b
+        all_rows.append({'Year': int(y), 'Gold': g, 'Silver': s, 'Bronze': b, 'Total': tot})
+
+    history_df = pd.DataFrame(all_rows)
+    modern_df = history_df[history_df['Year'] >= 1984].copy()
+
+    if len(modern_df) < 3 or modern_df['Total'].sum() == 0:
+        return None, history_df
+
+    X = modern_df[['Year']].values
+    y_tot = modern_df['Total'].values
+    y_gold = modern_df['Gold'].values
+    y_silver = modern_df['Silver'].values
+
+    # Higher weight given to more recent performance (1984 to 2024)
+    weights = np.linspace(1.0, 3.5, len(X))
+
+    model_tot = Ridge(alpha=1.0)
+    model_tot.fit(X, y_tot, sample_weight=weights)
+    pred_tot = max(0, int(round(model_tot.predict([[2028]])[0])))
+
+    model_gold = Ridge(alpha=1.0)
+    model_gold.fit(X, y_gold, sample_weight=weights)
+    pred_gold = max(0, int(round(model_gold.predict([[2028]])[0])))
+
+    model_silver = Ridge(alpha=1.0)
+    model_silver.fit(X, y_silver, sample_weight=weights)
+    pred_silver = max(0, int(round(model_silver.predict([[2028]])[0])))
+
+    # Host Country Advantage boost for USA in LA 2028 (historical host advantage is approx +10-15%)
+    if country == 'USA':
+        pred_tot = int(round(pred_tot * 1.08))
+        pred_gold = int(round(pred_gold * 1.08))
+        pred_silver = int(round(pred_silver * 1.08))
+
+    if pred_gold + pred_silver > pred_tot:
+        pred_tot = pred_gold + pred_silver
+
+    pred_bronze = max(0, pred_tot - (pred_gold + pred_silver))
+
+    # Calculate recent trend (comparison between 2024 and 2020)
+    y24 = modern_df[modern_df['Year'] == 2024]['Total'].values
+    y20 = modern_df[modern_df['Year'] == 2020]['Total'].values
+    val24 = y24[0] if len(y24) > 0 else 0
+    val20 = y20[0] if len(y20) > 0 else 0
+    momentum = val24 - val20
+
+    pred_summary = {
+        'Predicted_Total': pred_tot,
+        'Predicted_Gold': pred_gold,
+        'Predicted_Silver': pred_silver,
+        'Predicted_Bronze': pred_bronze,
+        'Momentum': momentum,
+        'Last_Edition_Total': val24
+    }
+
+    return pred_summary, history_df

@@ -31,7 +31,13 @@ An interactive, end-to-end data science and analytics dashboard built with **Str
 - Comparative medal timeline charts showing historic dominance shifts.
 - Comparative tabular data breakdown.
 
-### 5. 🏃 Athlete Demographics & Trends
+### 5. 🔮 Los Angeles 2028 Olympic Medal Predictor
+- Machine Learning (Ridge Time-Series Regression) forecast model.
+- Projects Gold 🥇, Silver 🥈, Bronze 🥉, and Total medal hauls for LA 2028.
+- Incorporates modern era trends (1984–2024), recent momentum deltas, and host nation advantage.
+- Interactive trajectory chart highlighting the 2028 projection point against history.
+
+### 6. 🏃 Athlete Demographics & Trends
 - **Age Distribution**: Kernel density estimates comparing age profiles of gold, silver, bronze, and non-medalists.
 - **Physique Explorer (Height vs Weight)**: Interactive scatter plot with athlete-level tooltips across sports and genders.
 - **Gender Inclusivity**: Male vs Female participation progression over the decades.

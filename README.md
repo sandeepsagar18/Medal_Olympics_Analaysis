@@ -6,7 +6,9 @@
 
 An interactive, end-to-end data science and machine learning web application built with **Streamlit**, **Pandas**, **Scikit-Learn**, and **Plotly**. Explore 128 years of modern Summer Olympic history (1896–2024) and forecast future medal tallies for **Los Angeles 2028**.
 
-![Olympics Banner](https://images.unsplash.com/photo-1569517282132-25d22f4573e6?auto=format&fit=crop&w=1200&q=80)
+<p align="center">
+  <img src="assets/olympics_banner.png" alt="Olympics Banner" width="850"/>
+</p>
 
 ---
 
